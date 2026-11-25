@@ -97,14 +97,14 @@ function saveNow() {
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
     const t = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    setStatus(`● сохранено в этом браузере · ${t}`);
+    setStatus(`сохранено в этом браузере · ${t}`);
   } catch (e) {
-    setStatus('✕ не удалось сохранить: ' + e.message, 'error');
+    setStatus('не удалось сохранить: ' + e.message, 'error');
   }
 }
 
 function save() {
-  setStatus('○ сохраняю…', 'busy');
+  setStatus('сохраняю…', 'busy');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 300);
 }
@@ -281,7 +281,7 @@ function renderBlock(b) {
     h('div', { class: 'block-foot' },
       b.columns.length ? h('button', { class: 'btn', type: 'button', onclick: () => addRow(b, b.columns.find(c => c.type === 'text')?.id) }, '+ строка') : null,
       addMenu),
-    h('label', { class: 'notes-label', for: notes.id }, '# пометки'),
+    h('label', { class: 'notes-label', for: notes.id }, 'Пометки'),
     notes);
   return sec;
 }
@@ -485,7 +485,7 @@ function exportData() {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  setStatus('↓ файл экспорта скачан');
+  setStatus('файл экспорта скачан');
 }
 
 async function importFile(file) {
@@ -501,7 +501,7 @@ async function importFile(file) {
   state = next;
   saveNow();
   renderAll();
-  setStatus('↑ данные импортированы');
+  setStatus('данные импортированы');
 }
 
 /* ===== Wiring ===== */
