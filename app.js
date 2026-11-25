@@ -525,8 +525,27 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') board.querySelectorAll('details.menu[open]').forEach(d => { d.open = false; d.querySelector('summary').focus(); });
 });
 
+/* Light / dark theme (the initial one is set in index.html before paint). */
+const THEME_KEY = 'project-notes:theme';
+const themeBtn = document.getElementById('theme');
+function showTheme(t) {
+  document.documentElement.dataset.theme = t;
+  const label = t === 'dark' ? 'Светлая тема' : 'Тёмная тема';
+  themeBtn.setAttribute('aria-label', label);
+  themeBtn.title = label;
+}
+showTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+themeBtn.addEventListener('click', () => {
+  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  showTheme(t);
+  try { localStorage.setItem(THEME_KEY, t); } catch (e) { /* private mode: theme just won't persist */ }
+});
+
 /* Another tab of the same site changed the data. */
-window.addEventListener('storage', e => { if (e.key === KEY) { state = load(); renderAll(); } });
+window.addEventListener('storage', e => {
+  if (e.key === KEY) { state = load(); renderAll(); }
+  if (e.key === THEME_KEY && (e.newValue === 'dark' || e.newValue === 'light')) showTheme(e.newValue);
+});
 
 let lastWidth = window.innerWidth;
 window.addEventListener('resize', () => { if (window.innerWidth !== lastWidth) { lastWidth = window.innerWidth; autosizeIn(board); } });

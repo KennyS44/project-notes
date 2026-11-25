@@ -15,6 +15,26 @@
   --shadow: 0 2px 8px rgba(0, 0, 0, .05);
   --shadow-card: 0 4px 24px rgba(0, 0, 0, .08);
   --ease: cubic-bezier(.2, .7, .2, 1);
+  --hover: rgba(0, 0, 0, .025);
+  --danger: #b8352d;
+}
+
+/* Dark theme, like keepsimple.io's moon mode: graphite-navy, light ink. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #1b1e26;
+  --card: #222633;
+  --white: #151a26;
+  --ink: #e4e4e4;
+  --muted: #a3a7b3;
+  --line: #3a3f4d;
+  --line-strong: #6b7080;
+  --sun: #c9473e;
+  --wash: #2e3342;
+  --shadow: 0 2px 8px rgba(0, 0, 0, .3);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, .35);
+  --hover: rgba(255, 255, 255, .03);
+  --danger: #ee8a80;
 }
 
 * { box-sizing: border-box; }
@@ -27,6 +47,7 @@ body {
   color: var(--ink);
   font: 16px/1.5 var(--serif);
   background-color: var(--paper);
+  transition: background-color .4s var(--ease), color .4s var(--ease);
   /* soft paper grain */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -78,6 +99,16 @@ button, input, textarea { font: inherit; color: inherit; }
 
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
+.theme-btn { color: var(--ink); }
+.theme-btn svg { transition: transform .4s var(--ease); }
+.theme-btn:hover svg { transform: rotate(-20deg); }
+.i-sun { display: none; }
+[data-theme="dark"] .i-sun { display: block; }
+[data-theme="dark"] .i-moon { display: none; }
+
+/* cards, bars and fields follow the theme smoothly */
+.bar, .status, .block, .notes, .menu-list, .table-wrap, th, td { transition: background-color .4s var(--ease), border-color .4s var(--ease), color .4s var(--ease); }
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -92,7 +123,7 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .btn:hover { background: var(--ink); color: var(--white); }
 .btn.primary { background: var(--ink); color: var(--white); }
-.btn.primary:hover { background: #000; }
+.btn.primary:hover { opacity: .85; }
 
 .icon-btn {
   display: inline-flex;
@@ -110,7 +141,7 @@ button, input, textarea { font: inherit; color: inherit; }
   transition: color .3s var(--ease), background .3s var(--ease);
 }
 .icon-btn:hover { color: var(--ink); background: var(--wash); }
-.icon-btn.danger:hover { color: var(--sun); }
+.icon-btn.danger:hover { color: var(--danger); }
 .icon-btn:disabled { opacity: .35; cursor: default; background: transparent; }
 
 /* ---------- board & blocks ---------- */
@@ -180,7 +211,7 @@ th, td { border-bottom: 1px solid var(--line); vertical-align: top; padding: 0; 
 td + td, th + th { border-left: 1px solid var(--line); }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr { transition: background .3s var(--ease); }
-tbody tr:hover { background: rgba(0, 0, 0, .025); }
+tbody tr:hover { background: var(--hover); }
 
 th { position: relative; text-align: left; font-weight: 400; border-bottom-color: var(--line-strong); }
 
@@ -333,12 +364,12 @@ td.cell-del { text-align: center; }
   gap: 4px 16px;
   padding: 8px 32px;
   background: var(--white);
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, .05);
+  box-shadow: var(--shadow);
   font: 400 14px/1.5 var(--serif);
   color: var(--muted);
 }
 #status { transition: color .3s var(--ease); }
-#status.error { color: var(--sun); }
+#status.error { color: var(--danger); }
 
 @media (max-width: 600px) {
   .bar { padding: 8px 16px; }
