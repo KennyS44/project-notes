@@ -15,23 +15,27 @@ const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(3
 const clampPct = v => Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
 const emptyValue = type => (type === 'check' ? false : type === 'percent' ? 0 : '');
 
-function sampleState() {
+/* A table with a task column, three checkbox steps and an auto % column. */
+function newBlock(title, tasks) {
   const task = { id: uid(), name: 'Задача', type: 'text' };
-  const done = { id: uid(), name: 'Готово', type: 'check' };
+  const steps = ['Шаг 1', 'Шаг 2', 'Шаг 3'].map(name => ({ id: uid(), name, type: 'check' }));
   const pct = { id: uid(), name: 'Выполнено', type: 'percent' };
-  const row = (t, d, p) => ({ id: uid(), cells: { [task.id]: t, [done.id]: d, [pct.id]: p } });
+  const b = { id: uid(), title, columns: [task, ...steps, pct], rows: [], notes: '', size: null, notesHeight: null };
+  b.rows = tasks.map(([text, done]) => {
+    const r = { id: uid(), cells: { [task.id]: text } };
+    steps.forEach((c, i) => { r.cells[c.id] = i < done; });
+    r.cells[pct.id] = 0;
+    return r;
+  });
+  b.rows.forEach(r => recalcRow(b, r));
+  return b;
+}
+
+function sampleState() {
   return {
     version: 1,
     title: 'Мой проект',
-    blocks: [{
-      id: uid(),
-      title: 'Задачи',
-      columns: [task, done, pct],
-      rows: [row('Собрать требования', true, 100), row('Сделать макет', false, 40), row('Запустить сайт', false, 0)],
-      notes: '',
-      size: null,
-      notesHeight: null,
-    }],
+    blocks: [newBlock('Задачи', [['Собрать требования', 3], ['Сделать макет', 1], ['Запустить сайт', 0]])],
   };
 }
 
@@ -138,13 +142,23 @@ function autosize(ta) {
 const autosizeIn = root => root.querySelectorAll('.cell-text').forEach(autosize);
 
 /* ===== Progress ===== */
-/* Row progress: first % column if any, otherwise first checkbox column. */
+/* Row progress = share of ticked checkboxes in the row.
+   With no checkbox columns, the % column is filled in by hand. */
+function checkCols(b) { return b.columns.filter(c => c.type === 'check'); }
+function isAutoPct(b) { return checkCols(b).length > 0; }
+
 function rowProgress(b, r) {
+  const checks = checkCols(b);
+  if (checks.length) return Math.round(checks.filter(c => r.cells[c.id]).length / checks.length * 100);
   const pct = b.columns.find(c => c.type === 'percent');
-  if (pct) return r.cells[pct.id];
-  const chk = b.columns.find(c => c.type === 'check');
-  if (chk) return r.cells[chk.id] ? 100 : 0;
-  return null;
+  return pct ? r.cells[pct.id] : null;
+}
+
+/* Store the computed value in every % column of the row (so export has it too). */
+function recalcRow(b, r) {
+  if (!isAutoPct(b)) return;
+  const v = rowProgress(b, r);
+  for (const c of b.columns) if (c.type === 'percent') r.cells[c.id] = v;
 }
 
 function blockProgress(b) {
@@ -184,22 +198,16 @@ function plural(n, one, few, many) {
   return many;
 }
 
-/* ===== Check <-> percent sync (first columns of each kind) ===== */
-function syncRow(b, r, changed, tr) {
-  const pct = b.columns.find(c => c.type === 'percent');
-  const chk = b.columns.find(c => c.type === 'check');
-  if (!pct || !chk) return;
-  if (changed.id === chk.id) {
-    if (r.cells[chk.id]) r.cells[pct.id] = 100;
-    else if (r.cells[pct.id] === 100) r.cells[pct.id] = 0;
-  } else if (changed.id === pct.id) {
-    r.cells[chk.id] = r.cells[pct.id] === 100;
-  } else return;
-  const pctInput = tr.querySelector(`input[data-col="${CSS.escape(pct.id)}"]`);
-  if (pctInput && document.activeElement !== pctInput) pctInput.value = r.cells[pct.id];
-  paintPct(pctInput?.closest('.pct-cell'), r.cells[pct.id]);
-  const chkInput = tr.querySelector(`input[data-col="${CSS.escape(chk.id)}"]`);
-  if (chkInput) chkInput.checked = r.cells[chk.id];
+/* Refresh the % cells of one row after a checkbox changed. */
+function refreshRowPct(b, r, tr) {
+  recalcRow(b, r);
+  for (const c of b.columns) {
+    if (c.type !== 'percent') continue;
+    const cell = tr.querySelector(`.pct-cell[data-col="${CSS.escape(c.id)}"]`);
+    if (!cell) continue;
+    cell.querySelector('.pct-value').textContent = r.cells[c.id];
+    paintPct(cell, r.cells[c.id]);
+  }
 }
 
 function paintPct(cell, v) {
@@ -302,6 +310,7 @@ function renderTh(b, c, i) {
 }
 
 function renderRow(b, r) {
+  recalcRow(b, r);
   const tr = h('tr', { dataset: { id: r.id } });
   for (const c of b.columns) tr.append(h('td', {}, renderCell(b, r, c, tr)));
   tr.append(h('td', { class: 'cell-del' },
@@ -315,17 +324,20 @@ function renderCell(b, r, c, tr) {
     return h('label', { class: 'check', title: c.name },
       h('input', {
         type: 'checkbox', checked: v, dataset: { col: c.id }, 'aria-label': c.name || 'Готово',
-        onchange: e => { r.cells[c.id] = e.target.checked; syncRow(b, r, c, tr); updateProgress(b); save(); },
+        onchange: e => { r.cells[c.id] = e.target.checked; refreshRowPct(b, r, tr); updateProgress(b); save(); },
       }),
       h('span', { class: 'box', 'aria-hidden': 'true' }, '✓'));
   }
   if (c.type === 'percent') {
-    const cell = h('div', { class: 'pct-cell' },
-      h('input', {
-        type: 'number', value: String(v), min: 0, max: 100, step: 5, inputmode: 'numeric', dataset: { col: c.id }, 'aria-label': (c.name || 'Процент') + ', %',
-        oninput: e => { r.cells[c.id] = clampPct(e.target.value); paintPct(cell, r.cells[c.id]); syncRow(b, r, c, tr); updateProgress(b); save(); },
-        onblur: e => { e.target.value = r.cells[c.id]; },
-      }),
+    const auto = isAutoPct(b);
+    const cell = h('div', { class: 'pct-cell' + (auto ? ' auto' : ''), dataset: { col: c.id }, title: auto ? 'Считается по галочкам строки' : null },
+      auto
+        ? h('output', { class: 'pct-value', 'aria-label': (c.name || 'Процент') + ', %' }, String(v))
+        : h('input', {
+          type: 'number', value: String(v), min: 0, max: 100, step: 5, inputmode: 'numeric', dataset: { col: c.id }, 'aria-label': (c.name || 'Процент') + ', %',
+          oninput: e => { r.cells[c.id] = clampPct(e.target.value); paintPct(cell, r.cells[c.id]); updateProgress(b); save(); },
+          onblur: e => { e.target.value = r.cells[c.id]; },
+        }),
       h('span', { 'aria-hidden': 'true' }, '%'),
       h('div', { class: 'pct-bar', 'aria-hidden': 'true' }, h('i')));
     paintPct(cell, v);
@@ -351,14 +363,7 @@ function focusCell(b, r, colId) {
 
 /* ===== Actions ===== */
 function addBlock() {
-  const task = { id: uid(), name: 'Задача', type: 'text' };
-  const done = { id: uid(), name: 'Готово', type: 'check' };
-  const pct = { id: uid(), name: 'Выполнено', type: 'percent' };
-  const b = {
-    id: uid(), title: 'Новая таблица', columns: [task, done, pct],
-    rows: [{ id: uid(), cells: { [task.id]: '', [done.id]: false, [pct.id]: 0 } }],
-    notes: '', size: null, notesHeight: null,
-  };
+  const b = newBlock('Новая таблица', [['', 0]]);
   state.blocks.push(b);
   save();
   renderAll();

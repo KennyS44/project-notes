@@ -172,7 +172,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .block-tools { display: flex; }
 
 /* ---------- table ---------- */
-.table-wrap { overflow-x: auto; border-bottom: 1px solid var(--ink); }
+.table-wrap { position: relative; overflow-x: auto; border-bottom: 1px solid var(--ink); }
 
 table { table-layout: fixed; min-width: 100%; border-collapse: collapse; }
 
@@ -226,7 +226,7 @@ th { position: relative; text-align: left; font-weight: 400; border-bottom-color
 }
 .cell-text:focus { outline: none; background: var(--white); box-shadow: inset 0 -2px 0 var(--ink); }
 
-.check { display: flex; align-items: center; justify-content: center; min-height: 44px; cursor: pointer; }
+.check { position: relative; display: flex; align-items: center; justify-content: center; min-height: 44px; cursor: pointer; }
 .check input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .check .box {
   display: inline-flex;
@@ -258,6 +258,8 @@ th { position: relative; text-align: left; font-weight: 400; border-bottom-color
 .pct-cell input::-webkit-outer-spin-button,
 .pct-cell input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .pct-cell input:focus { outline: none; }
+.pct-value { flex: 1; min-height: 40px; display: flex; align-items: center; justify-content: flex-end; color: var(--ink); font-variant-numeric: tabular-nums; }
+.pct-cell.auto { cursor: default; }
 .pct-cell:focus-within { background: var(--white); box-shadow: inset 0 -2px 0 var(--ink); }
 .pct-bar { position: absolute; left: 12px; right: 12px; bottom: 8px; height: 2px; background: var(--line); overflow: hidden; }
 .pct-bar i { display: block; height: 100%; width: calc(var(--p, 0) * 1%); background: var(--sun); transition: width .5s var(--ease), background .5s var(--ease); }
